@@ -17,7 +17,6 @@ app.get('/', (req, res) => {
   res.send('Hello World!')
 })
 
-
 // API serial
 app.get("/ports", async (req, res) => {
     try {
@@ -29,7 +28,6 @@ app.get("/ports", async (req, res) => {
         });
     }
 });
-
 
 app.post("/connect", async (req, res) => {
     const { path: portPath } = req.body;
