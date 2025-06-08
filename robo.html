@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <canvas id="cv" width="800" height="600" style="border: 1px solid black">
+        </canvas><br />
+
+        <input type="range" min="-360" max="360" value="0" class="slider" id="elo0" oninput="update_elos()"><br/ >
+        <input type="range" min="-360" max="360" value="0" class="slider" id="elo1" oninput="update_elos()"><br />
+        <input type="range" min="-360" max="360" value="0" class="slider" id="elo2" oninput="update_elos()">
+        <button onclick="goo()">Go</button>
+        <button onclick="draw_working_area()">Area</button>
+        <p id="dados"></p>
+        <p id="pos"></p>
+        x <input type="number" id="x" oninput="rodar_ik()">
+        y <input type="number" id="y" oninput="rodar_ik()">
+        <button onclick="rodar_ik()">IK</button>
+        <button onclick="draw_square()">Desenhar quadrado</button>
+
+        <script>
+            var ctx = document.getElementById("cv").getContext("2d");
+
+            let armx0 = 400;
+            let army0 = 0;
+
+            let elos = [
+                {
+                    angle: 54,
+                    length: 100
+                }, 
+                {
+                    angle: -41,
+                    length: 70,
+                },
+                {
+                    angle: 48,
+                    length: 20
+                }
+            ]
+
+            function deg2rad(a) {
+                return a * Math.PI / 180;
+            }
+
+            function rad2deg(a) {
+                return a * 180 / Math.PI;
+            }
+
+            function IK(x, y, z, O) {
+                O = deg2rad(O);
+
+                let l0 = elos[0].length;
+                let l1 = elos[1].length;
+                let l2 = elos[2].length;
+
+                let x0 = x - l2 * Math.cos(O);
+                let y0 = y - l2 * Math.sin(O);
+
+                let r = Math.sqrt(x0 * x0 + y0 * y0);
+                let alpha = Math.acos((r * r - l0 * l0 - l1 * l1) / (-2 * l0 * l1));
+                let q1 = Math.PI - alpha;
+                let q0 = Math.atan(y0 / x0) + Math.atan(l1 * Math.sin(q1) / (l0 + l1 * Math.cos(q1)));
+                let q2 = O + q1 - q0;
+
+                /*console.log(`x0 = ${x0}`);
+                console.log(`y0 = ${y0}`);
+                console.log(`r = ${r}`);
+                console.log(`alpha = ${alpha}`);
+                console.log(`q0 = ${q0}`);
+                console.log(`q1 = ${q1}`);
+                console.log(`q2 = ${q2}`);*/
+
+                ctx.fillRect(x0 + 400, mapy(y0), 5, 5);
+
+                q0 = rad2deg(q0);
+                q1 = rad2deg(q1);
+                q2 = rad2deg(q2);
+
+                return [q0, -q1, q2];
+            }
+
+            function goo() {
+                elos[0].angle += 10
+                elos[1].angle = 45
+                elos[2].angle = 45
+                draw_arms()
+                document.getElementById("dados").innerHTML = JSON.stringify(elos);
+            }
+
+            function update_elos() {
+                let a = document.getElementById("elo0").value;
+                elos[0].angle = parseInt(a);
+
+                let b = document.getElementById("elo1").value;
+                elos[1].angle = parseInt(b);
+
+                let c = document.getElementById("elo2").value;
+                elos[2].angle = parseInt(c);
+
+                draw_arms();
+
+                document.getElementById("dados").innerHTML = JSON.stringify(elos);
+            }
+
+            function map(x, in_min, in_max, out_min, out_max) {
+                return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+            }
+
+            function mapx(x) {
+                return x; //map(x, 0, 800, 800, 0);
+            }
+
+            function mapy(y) {
+                return map(y, 0, 600, 600, 0);
+            }
+
+            function draw_elo(x0, y0, a, elo) {
+                ctx.beginPath();
+                ctx.moveTo(mapx(x0), mapy(y0));
+                let angle = deg2rad(elo.angle + a);
+                let x = elo.length * Math.cos(angle) + x0;
+                let y = elo.length * Math.sin(angle) + y0;
+                ctx.lineTo(mapx(x), mapy(y));
+                ctx.stroke();
+                return [x, y];
+            }
+
+            function draw_arms() {
+                ctx.clearRect(0, 0, 800, 600);
+
+                let [x0, y0] = draw_elo(armx0, army0, 0, elos[0]);
+                let [x1, y1] = draw_elo(x0, y0, elos[0].angle, elos[1]);
+                let [x2, y2] = draw_elo(x1, y1, elos[0].angle + elos[1].angle, elos[2]);
+
+                document.getElementById("pos").innerHTML = `x = ${x2 - 400}; y = ${y2}`;
+                document.getElementById("dados").innerHTML = JSON.stringify(elos);
+            }
+
+            function draw_working_area() {
+                let points = [];
+                for (let i = 0; i < 180; i += 5) {
+                    for (let j = 0; j < 360; j += 5) {
+                        for (let k = 0; k < 360; k += 5) {
+                            elos[0].angle = i;
+                            elos[1].angle = j;
+                            elos[2].angle = k;
+                            let [x0, y0] = draw_elo(armx0, army0, 0, elos[0]);
+                            let [x1, y1] = draw_elo(x0, y0, elos[0].angle, elos[1]);
+                            let [x2, y2] = draw_elo(x1, y1, elos[0].angle + elos[1].angle, elos[2]);
+                            points.push([x2, y2]);
+                        }
+                    }
+                }
+
+                ctx.clearRect(0, 0, 800, 600);
+
+                console.log(points.length);
+                for (let i = 0; i < points.length; ++i) {
+                    ctx.fillRect(points[i][0], mapy(points[i][1]), 1, 1);
+                }
+            }
+
+            function rodar_ik() {
+                let x = parseInt(document.getElementById("x").value);
+                let y = parseInt(document.getElementById("y").value);
+
+                let r = Math.sqrt(x*x + y*y);
+
+                if (r < 100 + 70 + 20) {
+                    let [a0, a1, a2] = IK(x, y, 0, -90);
+
+                    elos[0].angle = a0;
+                    elos[1].angle = a1;
+                    elos[2].angle = a2;
+
+                    draw_arms();
+
+                    ctx.fillRect(armx0 + x, mapy(y), 5, 5);
+                }
+            }
+
+            function rodar_ik2(x, y) {
+                let r = Math.sqrt(x*x + y*y);
+
+                if (r < 100 + 70 + 20) {
+                    let [a0, a1, a2] = IK(x, y, 0, -90);
+
+                    elos[0].angle = a0;
+                    elos[1].angle = a1;
+                    elos[2].angle = a2;
+
+                    draw_arms();
+
+                    ctx.fillRect(armx0 + x, mapy(y), 5, 5);
+                }
+            }
+
+            let xx = 50;
+            let yy = 70;
+            let xb = xx;
+            let yb = yy;
+            let sz = 10;
+            let vx = 0.5;
+            let vy = 0.5;
+            let sq_points = [];
+
+            function draw_square() {
+                if (xb > xx + sz) {
+                    vx = -vx;
+                    yb += vy;
+                } else if (xb < xx) {
+                    vx = -vx;
+                    yb += vy;
+                }
+
+                rodar_ik2(xb, yb);
+                sq_points.push([xb, yb]);
+                xb += vx;
+
+                sq_points.forEach((e) => {
+                    ctx.fillRect(armx0 + e[0], mapy(e[1]), 1, 1);
+                });
+
+                if (yb < yy + sz) {
+                    requestAnimationFrame(draw_square);
+                } else {
+                    sq_points = [];
+                    xx = 50;
+                    yy = 70;
+                    xb = xx;
+                    yb = yy;
+                    sz = 10;
+                    vx = 0.5;
+                    vy = 0.5;
+                }
+            }
+
+            draw_arms();
+        </script>
+    </body>
+</html>
