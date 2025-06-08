@@ -17,6 +17,8 @@
         <label>Joint 4 Angle: <input type="range" min="-180" max="180" value="0" id="joint4"></label>
     </div>
 
+    <input type="number" id="vv" value="3" />
+
 
   <script>
     const canvas = document.getElementById("glcanvas");
@@ -175,17 +177,6 @@
 
     let dd = 0.5;
 
-    function IK(x, y, z, O) {
-        let x0 = x - elos[3].length * Math.cos(O);
-        let y0 = y - elos[3].length * Math.sin(O);
-        let l0 = elos[1].length;
-        let l1 = elos[2].length;
-
-        let r = Math.sqrt(x0 * x0 + y0 * y0);
-        let q1 = Math.acos((x0 * x0 + y0 * y0 - l0 * l0 - l1 * l1) / (2 * l0 * l1));
-        let q0 = Math.atan2(x0 / y0) - Math.atan2(l1 * Math.sin(q1) / (l0 + l1 * Math.cos(q1)));
-        let q2 = O - q1 - q0;
-    }
 
     function render() {
       const joint1 = elos[0].angle;
@@ -205,6 +196,7 @@
       mat4.lookAt(view, [26, 26, 10], [0, 0, 0], [0, 1, 0]);
 
       let matrix = mat4.create();
+      let vv = parseFloat(document.getElementById("vv").value);
       mat4.multiply(matrix, projection, view);
 
       // Link 1
