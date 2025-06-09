@@ -38,6 +38,7 @@
         <button class="" onclick="zoom += 0.1; render()">zoom-</button>
         <button class="" onclick="zoom -= 0.1; render()">zoom+</button>
         <button onclick="solveIK()">Solve IK</button>
+        <button onclick="drawCubeAnimationStart()">Cube</button>
     </div>
 
 
@@ -136,6 +137,10 @@
      16,17,18,  16,18,19,       // right
      20,21,22,  20,22,23        // left
     ]);
+
+    let fx = 0;
+    let fy = 0;
+    let fz = 0;
 
     let zoom = Math.PI / 4;
     let eye = {
@@ -251,7 +256,7 @@
         let [qbase, dist] = IKPolar(x, z, elos[0].length);
         let [q0, q1, q2] = IK2Dv2(dist, y, O);
 
-        if (true) {
+        if (false) {
             console.log(qbase);
             console.log(dist);
             console.log(q0);
@@ -319,15 +324,85 @@
         drawCube(test, [0, 0, 1, 1]);
     }
 
+    function drawPoint(x, y, z, color) {
+        let projection = mat4.create();
+        let view = mat4.create();
+
+        mat4.perspective(projection, zoom, canvas.width / canvas.height, 0.1, 200);
+        mat4.lookAt(view, [eye.x, eye.y, eye.z], [0, 0, 0], [0, 1, 0]);
+
+        let projview = mat4.create();
+        mat4.multiply(projview, projection, view);
+
+        let test = mat4.create();
+
+        mat4.translate(test, projview, [x, y, z]);
+        mat4.scale(test, test, [0.1, 0.1, 0.1]);
+        drawCube(test, color);
+    }
+
+    let points = [];
+    let xx0 = fx;
+    let yy0 = fy;
+    let zz0 = fz;
+    let xx = fx;
+    let yy = fy;
+    let zz = fz;
+    let vx = 0.1;
+    let vy = -0.1;
+    let vz = 0.1;
+    let csz = 1;
+
+    function drawCubeAnimationStart() {
+        points = [];
+        xx0 = fx;
+        yy0 = fy;
+        zz0 = fz;
+        xx = fx;
+        yy = fy;
+        zz = fz;
+        vx = 0.1;
+        vy = -0.1;
+        vz = 0.1;
+        csz = 1;
+
+        drawCubeAnimation();
+    }
+
+    function drawCubeAnimation() {
+        xx += vx;
+
+        if (xx < xx0 || xx > xx0 + csz) {
+            vx = -vx;
+            zz += vz;
+        }
+
+        if (zz < zz0 || zz > zz0 + csz) {
+            vz = -vz;
+            yy += vy;
+        }
+
+        IK(xx, yy, zz, 270);
+        render();
+        points.push([xx, yy, zz]);
+
+        points.forEach((v) => {
+            drawPoint(v[0], v[1], v[2], [1, 0, 0, 1])
+        });
+
+        if (yy <= yy0 && yy >= yy0 - csz) {
+            requestAnimationFrame(drawCubeAnimation);
+        } else {
+            alert(`${yy}`);
+        }
+    }
+
     function clear_canvas() {
         gl.enable(gl.DEPTH_TEST);
         gl.clearColor(0.9, 0.9, 0.9, 1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     }
 
-    let fx = 0;
-    let fy = 0;
-    let fz = 0;
 
     function render() {
         const joint1 = elos[0].angle;
