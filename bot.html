@@ -370,17 +370,17 @@
     }
 
     function drawCubeAnimation() {
-        xx += vx;
-
         if (xx < xx0 || xx > xx0 + csz) {
             vx = -vx;
             zz += vz;
+
+            if (zz < zz0 || zz > zz0 + csz) {
+                vz = -vz;
+                yy += vy;
+            }
         }
 
-        if (zz < zz0 || zz > zz0 + csz) {
-            vz = -vz;
-            yy += vy;
-        }
+        xx += vx;
 
         IK(xx, yy, zz, 270);
         render();
@@ -393,7 +393,7 @@
         if (yy <= yy0 && yy >= yy0 - csz) {
             requestAnimationFrame(drawCubeAnimation);
         } else {
-            alert(`${yy}`);
+            alert(`Fim!`);
         }
     }
 
