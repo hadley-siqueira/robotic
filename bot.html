@@ -19,12 +19,14 @@
     </div>
 
     <div>
-        x: <input type="number" id="target_x" value="3" oninput="render()"/><br />
-        y: <input type="number" id="target_y" value="10" oninput="render()"/><br />
-        z: <input type="number" id="target_z" value="0" oninput="render()"/><br />
+        x: <input type="number" id="target_x" value="2" oninput="render()"/><br />
+        y: <input type="number" id="target_y" value="5" oninput="render()"/><br />
+        z: <input type="number" id="target_z" value="16" oninput="render()"/><br />
     </div>
 
     <p id="dados"></p>
+    <p id="tip"></p>
+
 
     <div class="arrows">
         <button class="" onclick="eye.x--; render()">X-</button>
@@ -33,8 +35,9 @@
         <button class="" onclick="eye.y++; render()">Y+</button>
         <button class="" onclick="eye.z--; render()">Z-</button>
         <button class="" onclick="eye.z++; render()">Z+</button>
-        <button class="" onclick="zoom += 0.1; render()">zoom+</button>
+        <button class="" onclick="zoom += 0.1; render()">zoom-</button>
         <button class="" onclick="zoom -= 0.1; render()">zoom+</button>
+        <button onclick="solveIK()">Solve IK</button>
     </div>
 
 
@@ -145,19 +148,19 @@
         {
             name: "base",
             angle: 0,
-            length: 3,
+            length: 2,
             color: [0.3, 0.6, 1, 1]
         },
         {
             name: "elo0",
             angle: 0,
-            length: 3,
+            length: 10,
             color: [0.3, 1, 0.6, 1]
         },
         {
             name: "elo1",
             angle: 0,
-            length: 3,
+            length: 10,
             color: [1, 0.6, 0.3, 1]
         },
         {
@@ -203,76 +206,79 @@
       return d * 180 / Math.PI;
     }
 
-    function IKPolar(x, z, r) {
-        let dist = Math.sqrt(x * x + z * z);
-        let angle = Math.asin(r / dist);
-        let sz = dist * Math.cos(angle);
+    function IKPolar(x, z, w) {
+        let a = Math.atan2(z, x);
+        let r = Math.sqrt(x * x + z * z);
+        let ab = Math.acos(w / r);
+        let b = ab - a;
+        let zz = r * Math.sin(ab);
 
-        return [radToDeg(angle), sz];
+        return [radToDeg(b), zz];
     }
 
-    function IK2D(x, y, O) {
+    function IK2Dv2(x, y, O) {
         O = degToRad(O);
 
-        let l0 = elos[1].length;
-        let l1 = elos[2].length;
-        let l2 = elos[3].length;
+        let l1 = elos[1].length;
+        let l2 = elos[2].length;
+        let l3 = elos[3].length;
 
-        let x0 = x - l2 * Math.cos(O);
-        let y0 = y - l2 * Math.sin(O);
+        let x0 = x - l3 * Math.cos(O - Math.PI);
+        let y0 = y + l3 * Math.sin(O - Math.PI);
 
         let r = Math.sqrt(x0 * x0 + y0 * y0);
-        let alpha = Math.acos((r * r - l0 * l0 - l1 * l1) / (-2 * l0 * l1));
-        let q1 = Math.PI - alpha;
-        let q0 = Math.atan(y0 / x0) + Math.atan(l1 * Math.sin(q1) / (l0 + l1 * Math.cos(q1)));
-        let q2 = O + q1 - q0;
+        let beta = Math.acos((r * r - l1 * l1 - l2 * l2) / (-2 * l1 * l2));
+        let q1 = Math.PI - beta;
+        let alpha = Math.atan(y0 / x0);
+        let theta = Math.acos((l2 * l2 - r * r - l1 * l1) / (-2 * r * l1));
+        let q0 = Math.PI / 2 - alpha - theta;
 
-        if (false) {
-            console.log(`x0 = ${x0}`);
-            console.log(`y0 = ${y0}`);
-            console.log(`r = ${r}`);
-            console.log(`alpha = ${alpha}`);
-            console.log(`q0 = ${q0}`);
-            console.log(`q1 = ${q1}`);
-            console.log(`q2 = ${q2}`);
-        }
+        let x1 = l1 * Math.sin(q0);
+        let y1 = l1 * Math.cos(q0);
+
+        let r0 = Math.sqrt((x1 - x) * (x1 - x) + (y1 - y) * (y1 - y));
+        let gamma = Math.acos((r0 * r0 - l3 * l3 - l2 * l2) / (-2 * l3 * l2));
+        let q2 = Math.PI - gamma;
 
         q0 = radToDeg(q0);
         q1 = radToDeg(q1);
         q2 = radToDeg(q2);
 
-        if (x > 0) {
-            return [q0, -q1, q2];
-        } else {
-            return [180 + q0, -q1, 180 + q2];
-        }
+        return [q0, q1, q2];
     }
 
     function IK(x, y, z, O) {
         let [qbase, dist] = IKPolar(x, z, elos[0].length);
-        let [q0, q1, q2] = IK2D(dist, y, O);
+        let [q0, q1, q2] = IK2Dv2(dist, y, O);
 
-        console.log(qbase);
-        console.log(dist);
-        console.log(q0);
-        console.log(q1);
-        console.log(q2);
-        console.log(x);
-        console.log(y);
-        console.log(z);
+        if (true) {
+            console.log(qbase);
+            console.log(dist);
+            console.log(q0);
+            console.log(q1);
+            console.log(q2);
+            console.log(x);
+            console.log(y);
+            console.log(z);
+        }
 
         elos[0].angle = qbase;
-        //elos[1].angle = q0;
-        //elos[2].angle = q1;
-        //elos[3].angle = q2;
+        elos[1].angle = q0;
+        elos[2].angle = q1;
+        elos[3].angle = q2;
+
+        joint1Slider.value = qbase;
+        joint2Slider.value = q0;
+        joint3Slider.value = q1;
+        joint4Slider.value = q2;
     }
 
-    function rIK() {
+    function solveIK() {
         let x = parseFloat(document.getElementById("target_x").value);
         let y = parseFloat(document.getElementById("target_y").value);
         let z = parseFloat(document.getElementById("target_z").value);
 
-        IK(y, x, z, 90);
+        IK(x, y, z, 270);
         render();
     }
 
@@ -297,8 +303,8 @@
         let y = parseFloat(document.getElementById("target_y").value);
         let z = parseFloat(document.getElementById("target_z").value);
 
-        const projection = mat4.create();
-        const view = mat4.create();
+        let projection = mat4.create();
+        let view = mat4.create();
 
         mat4.perspective(projection, zoom, canvas.width / canvas.height, 0.1, 200);
         mat4.lookAt(view, [eye.x, eye.y, eye.z], [0, 0, 0], [0, 1, 0]);
@@ -306,9 +312,11 @@
         let projview = mat4.create();
         mat4.multiply(projview, projection, view);
 
-        mat4.translate(projview, projview, [x, y, z]);
-        mat4.scale(projview, projview, [0.2, 0.2, 0.2]);
-        drawCube(projview, [1, 0, 0, 1]);
+        let test = mat4.create();
+
+        mat4.translate(test, projview, [x, y, z]);
+        mat4.scale(test, test, [0.2, 0.2, 0.2]);
+        drawCube(test, [0, 0, 1, 1]);
     }
 
     function clear_canvas() {
@@ -316,6 +324,10 @@
         gl.clearColor(0.9, 0.9, 0.9, 1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     }
+
+    let fx = 0;
+    let fy = 0;
+    let fz = 0;
 
     function render() {
         const joint1 = elos[0].angle;
@@ -377,6 +389,28 @@
         mat4.translate(eff, eff, [elos[3].length / 2, 0, 0]);
         mat4.scale(eff, eff, [0.3, 0.3, 0.3]);
         drawCube(eff, [1, 0.2, 0.2, 1]);
+
+        let final_pos = mat4.create();
+        mat4.rotateY(final_pos, final_pos, degToRad(elos[0].angle));
+        mat4.translate(final_pos, final_pos, [elos[0].length / 2, 0, 0]);
+        mat4.translate(final_pos, final_pos, [elos[0].length / 2, 0, 0]);
+        mat4.rotateY(final_pos, final_pos, degToRad(90));
+        mat4.rotateZ(final_pos, final_pos, degToRad(90));
+        mat4.rotateZ(final_pos, final_pos, degToRad(elos[1].angle));
+        mat4.translate(final_pos, final_pos, [elos[1].length / 2, 0, 0]);
+        mat4.translate(final_pos, final_pos, [elos[1].length / 2, 0, 0]);
+        mat4.rotateZ(final_pos, final_pos, degToRad(elos[2].angle));
+        mat4.translate(final_pos, final_pos, [elos[2].length / 2, 0, 0]);
+        mat4.translate(final_pos, final_pos, [elos[2].length / 2, 0, 0]);
+        mat4.rotateZ(final_pos, final_pos, degToRad(elos[3].angle));
+        mat4.translate(final_pos, final_pos, [elos[3].length / 2, 0, 0]);
+        mat4.translate(final_pos, final_pos, [elos[3].length / 2, 0, 0]);
+
+        fx = final_pos[12];
+        fy = final_pos[13];
+        fz = final_pos[14];
+
+        document.getElementById("tip").innerHTML = `x = ${fx}; y = ${fy}; z = ${fz}`;
 
         draw_test();
       }

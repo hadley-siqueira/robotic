@@ -11,8 +11,9 @@
         <button onclick="draw_working_area()">Area</button>
         <p id="dados"></p>
         <p id="pos"></p>
-        x <input type="number" id="x" oninput="rodar_ik()">
-        y <input type="number" id="y" oninput="rodar_ik()">
+        x <input type="number" id="x" oninput="rodar_ik()" value="70">
+        y <input type="number" id="y" oninput="rodar_ik()" value="70">
+        ang <input type="number" id="ang" oninput="rodar_ik()" value="90">
         <button onclick="rodar_ik()">IK</button>
         <button onclick="draw_square()">Desenhar quadrado</button>
 
@@ -168,9 +169,10 @@
                 let y = parseInt(document.getElementById("y").value);
 
                 let r = Math.sqrt(x*x + y*y);
+                let ang = parseFloat(document.getElementById("ang").value);
 
                 if (r < 100 + 70 + 20) {
-                    let [a0, a1, a2] = IK(x, y, 0, -90);
+                    let [a0, a1, a2] = IK(x, y, 0, ang);
 
                     elos[0].angle = a0;
                     elos[1].angle = a1;
