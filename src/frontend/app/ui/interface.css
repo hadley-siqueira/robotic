@@ -1,0 +1,14 @@
+.interface {
+    height: 100%;
+    display: grid;
+    gap: 20px;
+    padding: 20px;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr 1fr;
+    grid-template-areas:
+        "canvas canvas status positions positions"
+        "canvas canvas status positions positions"
+        "canvas canvas logs logs logs"
+        "controls controls controls controls controls";
+}
+

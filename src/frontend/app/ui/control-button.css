@@ -1,0 +1,34 @@
+:root {
+    --button-size: 40px;
+    --gap-size: 10px;
+}
+
+.control-button {
+    box-shadow: inset 0px 1px 0px 0px #ffffff;
+    background: linear-gradient(to bottom, #f9f9f9 5%, #e9e9e9 100%);
+    background-color: #f9f9f9;
+    border-radius: 7px;
+    border: 1px solid #dcdcdc;
+    display: flex; /*inline-block;*/
+    align-items: center;
+    justify-items: center;
+    cursor: pointer;
+    color: #777;
+    font-size: 25px;
+    font-weight: bold;
+    /*padding: 15px 15px;*/
+    text-decoration: none;
+    text-shadow: 0px 1px 0px #ffffff;
+    width: var(--button-size);
+    height: var(--buttons-size);
+}
+
+.control-button:hover {
+    background: linear-gradient(to bottom, #e9e9e9 5%, #f9f9f9 100%);
+    background-color: #e9e9e9;
+}
+
+.control-button:active {
+    position: relative;
+    top: 1px;
+}

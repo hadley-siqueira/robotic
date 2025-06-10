@@ -3,6 +3,10 @@
     <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <style>
+            :root {
+                --button-size: 40px;
+                --gap-size: 10px;
+            }
             * {
                 box-sizing: border-box;
                 margin: 0;
@@ -11,12 +15,22 @@
 
             body {
                 background-color: rgb(250, 250, 250);
+                height: 100vh;
             }
 
-            .control-container {
-                border: 1px solid black;
-                width: 1366px;
-                height: 768px;
+            .interface {
+                margin: auto;
+                height: 100%;
+                display: grid;
+                gap: 20px;
+                padding: 20px;
+                grid-template-columns: 1fr 1fr 1fr 1fr;
+                grid-template-rows: 1fr 1fr 1fr 1fr;
+                grid-template-areas:
+                    "rendering rendering status position"
+                    "rendering rendering status position"
+                    "rendering rendering logs logs"
+                    "controls controls controls controls";
             }
 
             .size-6 {
@@ -36,11 +50,11 @@
                 color: #777;
                 font-size: 25px;
                 font-weight: bold;
-                padding: 15px 15px;
+                /*padding: 15px 15px;*/
                 text-decoration: none;
                 text-shadow: 0px 1px 0px #ffffff;
-                width: 70px;
-                height: 70px;
+                width: var(--button-size);
+                height: var(--buttons-size);
             }
 
             .control-button:hover {
@@ -58,10 +72,9 @@
             }
 
             .myInput {
-                padding: 15px 15px;
                 display: inline-block;
-                width: 70px;
-                height: 70px;
+                width: var(--button-size);
+                height: var(--button-size);
                 font-size: 15px;
                 text-align: center;
             }
@@ -73,7 +86,7 @@
                 padding: 10px;
                 padding-right: 30px;
                 position: relative;
-                margin: 30px;
+                margin: 10px;
             }
 
             .named-container-title {
@@ -99,11 +112,11 @@
                 gap: 15px;
             }
 
-            .test {
+                .test {
                 display: grid;
                 grid-template-columns: 1fr 1fr 1fr 1fr;
                 grid-template-rows: 1fr 1fr 1fr 1fr;
-                gap: 15px;
+                gap: var(--gap-size);
                 justify-items: center;
                 align-items: center;
             }
@@ -112,17 +125,37 @@
                 display: grid;
                 grid-template-columns: 1fr 1fr 1fr 1fr;
                 grid-template-rows: 1fr 1fr 1fr 1fr;
-                gap: 15px;
+                gap: var(--gap-size);
                 grid-template-areas:
                     ". test2-up . test2-y-up"
                     "test2-left test2-input test2-right test2-y-input"
                     ". test2-down . test2-y-down";
             }
+
+            .controls-container {
+                background-color: blue;
+            }
         </style>
     </head>
 
     <body>
-        <div class="control-container">
+        <div class="interface">
+            <div style="grid-area: rendering; background-color: red">3D</div>
+            <div style="grid-area: position">Lista de posições</div>
+            <div style="grid-area: logs">Logs</div>
+
+            <div style="grid-area: status">
+                <p>Base: -50°</p>
+                <p>Elo 0: -50°</p>
+                <p>Elo 1: -50°</p>
+                <p>Ponta: -50°</p>
+                <p>X: 25mm</p>
+                <p>Y: 170mm</p>
+                <p>Z: 500mm</p>
+                <p>Garra: 100% aberta</p>
+            </div>
+
+        <div class="controls-container" style="grid-area: controls">
             <div class="named-container">
                 <h1 class="named-container-title">Deslocamento em ângulo</h1>
 
@@ -241,9 +274,7 @@
                     <input type="text" class="myInput" style="grid-area: test2-y-input" />
                 </div>
             </div>
-
-
-
+        </div>
         </div>
     </body>
 </html>

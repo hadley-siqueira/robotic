@@ -1,0 +1,4 @@
+.rendering-canvas {
+    grid-area: canvas;
+    background-color: #0f0;
+}
