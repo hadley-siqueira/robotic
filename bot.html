@@ -21,7 +21,7 @@
     <div>
         x: <input type="number" id="target_x" value="2" oninput="render()"/><br />
         y: <input type="number" id="target_y" value="5" oninput="render()"/><br />
-        z: <input type="number" id="target_z" value="16" oninput="render()"/><br />
+        z: <input type="number" id="target_z" value="5" oninput="render()"/><br />
     </div>
 
     <p id="dados"></p>
@@ -39,6 +39,7 @@
         <button class="" onclick="zoom -= 0.1; render()">zoom+</button>
         <button onclick="solveIK()">Solve IK</button>
         <button onclick="drawCubeAnimationStart()">Cube</button>
+        <button onclick="drawLineAnimationStart()">Line</button>
     </div>
 
 
@@ -394,6 +395,62 @@
             requestAnimationFrame(drawCubeAnimation);
         } else {
             alert(`Fim!`);
+        }
+    }
+
+    function map2D(p0, p1, t) {
+        let x = p0[0] + t * (p1[0] - p0[0]);
+        let y = p0[1] + t * (p1[1] - p0[1]);
+        let z = p0[2] + t * (p1[2] - p0[2]);
+
+        return [x, y, z];
+    }
+
+    let tmap = 0;
+    let angles = []
+
+    function drawLineAnimationStart() {
+        points = [];
+        xx0 = fx;
+        yy0 = fy;
+        zz0 = fz;
+        xx = fx;
+        yy = fy;
+        zz = fz;
+        vx = 0.1;
+        vy = -0.1;
+        vz = 0.1;
+        csz = 5;
+        tmap = 0;
+        angles = [];
+
+        drawLineAnimation();
+    }
+
+    function drawLineAnimation() {
+        let [xl, yl, zl] = map2D(
+            [xx0, yy0, zz0], 
+            [xx0 + csz, yy0 + csz, zz0 + csz],
+            tmap
+        );
+
+        IK(xl, yl, zl, 270);
+
+        angles.push([elos[0].angle, elos[1].angle, elos[2].angle, elos[3].angle]);
+
+        render();
+        points.push([xl, yl, zl]);
+
+        points.forEach((v) => {
+            drawPoint(v[0], v[1], v[2], [1, 0, 0, 1])
+        });
+
+        tmap += 0.025;
+
+        if (tmap < 1) {
+            requestAnimationFrame(drawLineAnimation);
+        } else {
+            alert(`Fim`)
         }
     }
 
