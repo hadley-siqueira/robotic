@@ -20,7 +20,7 @@ export default function XYZControls() {
                 <ControlButton icon="right" />
             </div>
 
-            <input type="text" className="myInput" style={{gridArea: 'xz-input'}} />
+            <input type="text" className="control-input" style={{gridArea: 'xz-input'}} />
 
             <div style={{gridArea: 'y-up'}}>
                 <ControlButton icon="up" />
@@ -30,7 +30,18 @@ export default function XYZControls() {
                 <ControlButton icon="down" />
             </div>
 
-            <input type="text" className="myInput" style={{gridArea: 'y-input'}} />
+            <input type="text" className="control-input" style={{gridArea: 'y-input'}} />
+
+            <div style={{gridArea: 'a-up'}}>
+                <ControlButton icon="up" />
+            </div>
+
+            <div style={{gridArea: 'a-down'}}>
+                <ControlButton icon="down" />
+            </div>
+
+            <input type="text" className="control-input" style={{gridArea: 'a-input'}} />
+
         </div>
     )
 }

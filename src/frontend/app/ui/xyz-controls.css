@@ -1,15 +1,16 @@
 .xyz-controls {
+    background-color: red;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
     grid-template-rows: 1fr 1fr 1fr 1fr;
     gap: var(--gap-size);
     grid-template-areas:
-        "   .   x-up        .    y-up"
-        "z-left xz-input z-right y-input"
-        "   .   x-down      .    y-down";
+        "   .   x-up        .    y-up    a-up"
+        "z-left xz-input z-right y-input a-input"
+        "   .   x-down      .    y-down  a-down";
 }
 
-.myInput {
+.control-input {
     display: inline-block;
     width: var(--button-size);
     height: var(--button-size);

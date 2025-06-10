@@ -9,22 +9,22 @@ export default function AngleControls() {
         <div className="angle-controls">
             <p>Base</p>
             <ControlButton icon="left" />
-            <ControlButton icon="up" />
+            <input type="text" className="control-input" />
             <ControlButton icon="right" />
 
             <p>Elo 1</p>
             <ControlButton icon="left" />
-            <ControlButton icon="up" />
+            <input type="text" className="control-input" />
             <ControlButton icon="right" />
 
             <p>Elo 2</p>
             <ControlButton icon="left" />
-            <ControlButton icon="up" />
+            <input type="text" className="control-input" />
             <ControlButton icon="right" />
 
             <p>Ponta</p>
             <ControlButton icon="left" />
-            <ControlButton icon="up" />
+            <input type="text" className="control-input" />
             <ControlButton icon="right" />
         </div>
     )
