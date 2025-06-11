@@ -1,9 +1,18 @@
-import './rendering-canvas.css'
+'use client'
 
-export default function RenderingCanvas() {
+import { useEffect } from 'react';
+import './rendering-canvas.css'
+import startWebGLForContext from './../webgl/webgl.js'
+
+export default function RenderingCanvas({ canvasRef, ctxRef }) {
+    useEffect(() => {
+        ctxRef.current = canvasRef.current.getContext("webgl")
+        startWebGLForContext(ctxRef.current)
+    })
+
     return (
         <div className="rendering-canvas">
-            aaa
+          <canvas id="glcanvas" ref={canvasRef}></canvas>
         </div>
     )
 }

@@ -1,0 +1,641 @@
+export default function startWebGLForContext(gl) {
+    if (!gl) {
+        alert("WebGL not supported!")
+        return
+    } 
+
+    // Vertex Shader
+    const vsSource = `
+        attribute vec4 aPosition;
+        uniform mat4 uMatrix;
+        void main() {
+            gl_Position = uMatrix * aPosition;
+        }
+    `;
+
+    // Fragment Shader
+    const fsSource = `
+        precision mediump float;
+        uniform vec4 uColor;
+        void main() {
+            gl_FragColor = uColor;
+        }
+    `;
+
+    // Compile Shader
+    function loadShader(type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            alert("Shader error: " + gl.getShaderInfoLog(shader));
+            gl.deleteShader(shader);
+            return null;
+        }
+        return shader;
+    }
+
+    const vs = loadShader(gl.VERTEX_SHADER, vsSource);
+    const fs = loadShader(gl.FRAGMENT_SHADER, fsSource);
+
+    const program = gl.createProgram();
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        alert("Program failed to link: " + gl.getProgramInfoLog(program));
+    }
+
+    gl.useProgram(program);
+}
+
+    // Cube vertices (centered at origin)
+    const positions = new Float32Array([
+      // Front face
+      -0.5, -0.5,  0.5,
+       0.5, -0.5,  0.5,
+       0.5,  0.5,  0.5,
+      -0.5,  0.5,  0.5,
+      // Back face
+      -0.5, -0.5, -0.5,
+      -0.5,  0.5, -0.5,
+       0.5,  0.5, -0.5,
+       0.5, -0.5, -0.5,
+      // Top face
+      -0.5,  0.5, -0.5,
+      -0.5,  0.5,  0.5,
+       0.5,  0.5,  0.5,
+       0.5,  0.5, -0.5,
+      // Bottom face
+      -0.5, -0.5, -0.5,
+       0.5, -0.5, -0.5,
+       0.5, -0.5,  0.5,
+      -0.5, -0.5,  0.5,
+      // Right face
+       0.5, -0.5, -0.5,
+       0.5,  0.5, -0.5,
+       0.5,  0.5,  0.5,
+       0.5, -0.5,  0.5,
+      // Left face
+      -0.5, -0.5, -0.5,
+      -0.5, -0.5,  0.5,
+      -0.5,  0.5,  0.5,
+      -0.5,  0.5, -0.5,
+    ]);
+
+    const indices = new Uint16Array([
+      0, 1, 2,   0, 2, 3,       // front
+      4, 5, 6,   4, 6, 7,       // back
+      8, 9,10,   8,10,11,       // top
+     12,13,14,  12,14,15,       // bottom
+     16,17,18,  16,18,19,       // right
+     20,21,22,  20,22,23        // left
+    ]);
+
+    let fx = 0;
+    let fy = 0;
+    let fz = 0;
+
+    let zoom = Math.PI / 4;
+    let eye = {
+        x: 26,
+        y: 26,
+        z: 10
+    };
+
+    let elos = [
+        {
+            name: "base",
+            angle: 0,
+            length: 2,
+            color: [0.3, 0.6, 1, 1]
+        },
+        {
+            name: "elo0",
+            angle: 0,
+            length: 10,
+            color: [0.3, 1, 0.6, 1]
+        },
+        {
+            name: "elo1",
+            angle: 0,
+            length: 10,
+            color: [1, 0.6, 0.3, 1]
+        },
+        {
+            name: "elo2",
+            angle: 0,
+            length: 3,
+            color: [0.6, 0.3, 1, 1]
+        },
+    ]
+
+    // Buffers
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+
+    const indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+
+    const aPosition = gl.getAttribLocation(program, "aPosition");
+    gl.enableVertexAttribArray(aPosition);
+    gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
+
+    const uMatrix = gl.getUniformLocation(program, "uMatrix");
+    const uColor = gl.getUniformLocation(program, "uColor");
+
+    // Matrices
+    function identity() {
+      return mat4.create();
+    }
+
+    function drawCube(transform, color) {
+      gl.uniformMatrix4fv(uMatrix, false, transform);
+      gl.uniform4fv(uColor, color);
+      gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+    }
+
+    function degToRad(d) {
+      return d * Math.PI / 180;
+    }
+
+    function radToDeg(d) {
+      return d * 180 / Math.PI;
+    }
+
+    function IKPolar(x, z, w) {
+        let a = Math.atan2(z, x);
+        let r = Math.sqrt(x * x + z * z);
+        let ab = Math.acos(w / r);
+        let b = ab - a;
+        let zz = r * Math.sin(ab);
+
+        return [radToDeg(b), zz];
+    }
+
+    function IK2Dv2(x, y, O) {
+        O = degToRad(O);
+
+        let l1 = elos[1].length;
+        let l2 = elos[2].length;
+        let l3 = elos[3].length;
+
+        let x0 = x - l3 * Math.cos(O - Math.PI);
+        let y0 = y + l3 * Math.sin(O - Math.PI);
+
+        let r = Math.sqrt(x0 * x0 + y0 * y0);
+        let beta = Math.acos((r * r - l1 * l1 - l2 * l2) / (-2 * l1 * l2));
+        let q1 = Math.PI - beta;
+        let alpha = Math.atan(y0 / x0);
+        let theta = Math.acos((l2 * l2 - r * r - l1 * l1) / (-2 * r * l1));
+        let q0 = Math.PI / 2 - alpha - theta;
+
+        let x1 = l1 * Math.sin(q0);
+        let y1 = l1 * Math.cos(q0);
+
+        let r0 = Math.sqrt((x1 - x) * (x1 - x) + (y1 - y) * (y1 - y));
+        let gamma = Math.acos((r0 * r0 - l3 * l3 - l2 * l2) / (-2 * l3 * l2));
+        let q2 = Math.PI - gamma;
+
+        q0 = radToDeg(q0);
+        q1 = radToDeg(q1);
+        q2 = radToDeg(q2);
+
+        return [q0, q1, q2];
+    }
+
+    function IK(x, y, z, O) {
+        let [qbase, dist] = IKPolar(x, z, elos[0].length);
+        let [q0, q1, q2] = IK2Dv2(dist, y, O);
+
+        if (false) {
+            console.log(qbase);
+            console.log(dist);
+            console.log(q0);
+            console.log(q1);
+            console.log(q2);
+            console.log(x);
+            console.log(y);
+            console.log(z);
+        }
+
+        elos[0].angle = qbase;
+        elos[1].angle = q0;
+        elos[2].angle = q1;
+        elos[3].angle = q2;
+
+        joint1Slider.value = qbase;
+        joint2Slider.value = q0;
+        joint3Slider.value = q1;
+        joint4Slider.value = q2;
+    }
+
+    function solveIK() {
+        let x = parseFloat(document.getElementById("target_x").value);
+        let y = parseFloat(document.getElementById("target_y").value);
+        let z = parseFloat(document.getElementById("target_z").value);
+
+        IK(x, y, z, 270);
+        render();
+    }
+
+    function draw_axis(projview) {
+        let eixo_x = mat4.create();
+        let eixo_y = mat4.create();
+        let eixo_z = mat4.create();
+        let matrix = mat4.create();
+
+        mat4.scale(eixo_x, projview, [100, 0.1, 0.1]);
+        drawCube(eixo_x, [1, 0, 0, 1]);
+
+        mat4.scale(eixo_y, projview, [0.1, 100, 0.1]);
+        drawCube(eixo_y, [0, 1, 0, 1]);
+
+        mat4.scale(eixo_z, projview, [0.1, 0.1, 100]);
+        drawCube(eixo_z, [0, 0, 1, 1]);
+    }
+
+    function draw_test() {
+        let x = parseFloat(document.getElementById("target_x").value);
+        let y = parseFloat(document.getElementById("target_y").value);
+        let z = parseFloat(document.getElementById("target_z").value);
+
+        let projection = mat4.create();
+        let view = mat4.create();
+
+        mat4.perspective(projection, zoom, canvas.width / canvas.height, 0.1, 200);
+        mat4.lookAt(view, [eye.x, eye.y, eye.z], [0, 0, 0], [0, 1, 0]);
+
+        let projview = mat4.create();
+        mat4.multiply(projview, projection, view);
+
+        let test = mat4.create();
+
+        mat4.translate(test, projview, [x, y, z]);
+        mat4.scale(test, test, [0.2, 0.2, 0.2]);
+        drawCube(test, [0, 0, 1, 1]);
+    }
+
+    function drawPoint(x, y, z, color) {
+        let projection = mat4.create();
+        let view = mat4.create();
+
+        mat4.perspective(projection, zoom, canvas.width / canvas.height, 0.1, 200);
+        mat4.lookAt(view, [eye.x, eye.y, eye.z], [0, 0, 0], [0, 1, 0]);
+
+        let projview = mat4.create();
+        mat4.multiply(projview, projection, view);
+
+        let test = mat4.create();
+
+        mat4.translate(test, projview, [x, y, z]);
+        mat4.scale(test, test, [0.1, 0.1, 0.1]);
+        drawCube(test, color);
+    }
+
+    let points = [];
+    let xx0 = fx;
+    let yy0 = fy;
+    let zz0 = fz;
+    let xx = fx;
+    let yy = fy;
+    let zz = fz;
+    let vx = 0.1;
+    let vy = -0.1;
+    let vz = 0.1;
+    let csz = 1;
+
+    function drawCubeAnimationStart() {
+        points = [];
+        xx0 = fx;
+        yy0 = fy;
+        zz0 = fz;
+        xx = fx;
+        yy = fy;
+        zz = fz;
+        vx = 0.1;
+        vy = -0.1;
+        vz = 0.1;
+        csz = 1;
+
+        drawCubeAnimation();
+    }
+
+    function drawCubeAnimation() {
+        if (xx < xx0 || xx > xx0 + csz) {
+            vx = -vx;
+            zz += vz;
+
+            if (zz < zz0 || zz > zz0 + csz) {
+                vz = -vz;
+                yy += vy;
+            }
+        }
+
+        xx += vx;
+
+        IK(xx, yy, zz, 270);
+        render();
+        points.push([xx, yy, zz]);
+
+        points.forEach((v) => {
+            drawPoint(v[0], v[1], v[2], [1, 0, 0, 1])
+        });
+
+        if (yy <= yy0 && yy >= yy0 - csz) {
+            requestAnimationFrame(drawCubeAnimation);
+        } else {
+            alert(`Fim!`);
+        }
+    }
+
+    function map2D(p0, p1, t) {
+        let x = p0[0] + t * (p1[0] - p0[0]);
+        let y = p0[1] + t * (p1[1] - p0[1]);
+        let z = p0[2] + t * (p1[2] - p0[2]);
+
+        return [x, y, z];
+    }
+
+    let tmap = 0;
+    let angles = []
+
+    function drawLineAnimationStart() {
+        points = [];
+        xx0 = fx;
+        yy0 = fy;
+        zz0 = fz;
+        xx = fx;
+        yy = fy;
+        zz = fz;
+        vx = 0.1;
+        vy = -0.1;
+        vz = 0.1;
+        csz = 5;
+        tmap = 0;
+        angles = [];
+
+        drawLineAnimation();
+    }
+
+    function drawLineAnimation() {
+        let [xl, yl, zl] = map2D(
+            [xx0, yy0, zz0], 
+            [xx0 + csz, yy0 + csz, zz0 + csz],
+            tmap
+        );
+
+        IK(xl, yl, zl, 270);
+
+        angles.push([elos[0].angle, elos[1].angle, elos[2].angle, elos[3].angle]);
+
+        render();
+        points.push([xl, yl, zl]);
+
+        points.forEach((v) => {
+            drawPoint(v[0], v[1], v[2], [1, 0, 0, 1])
+        });
+
+        tmap += 0.025;
+
+        if (tmap < 1) {
+            requestAnimationFrame(drawLineAnimation);
+        } else {
+            alert(`Fim`)
+        }
+    }
+
+    function clear_canvas() {
+        gl.enable(gl.DEPTH_TEST);
+        gl.clearColor(0.9, 0.9, 0.9, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    }
+
+
+    function render() {
+        const joint1 = elos[0].angle;
+        const joint2 = elos[1].angle;
+        const joint3 = elos[2].angle;
+        const joint4 = elos[3].angle;
+
+        clear_canvas();
+
+        const projection = mat4.create();
+        const view = mat4.create();
+
+        mat4.perspective(projection, zoom, canvas.width / canvas.height, 0.1, 200);
+        mat4.lookAt(view, [eye.x, eye.y, eye.z], [0, 0, 0], [0, 1, 0]);
+
+        let projview = mat4.create();
+        mat4.multiply(projview, projection, view);
+
+        draw_axis(projview);
+
+        // Base
+        let t = mat4.clone(projview);
+        mat4.rotateY(t, t, degToRad(elos[0].angle));
+        mat4.translate(t, t, [elos[0].length / 2, 0, 0]);
+        let l1 = mat4.clone(t);
+        mat4.scale(l1, l1, [elos[0].length, 0.4, 0.4]);
+        drawCube(l1, elos[0].color);
+
+        // Link 2
+        mat4.translate(t, t, [elos[0].length / 2, 0, 0]);
+
+        mat4.rotateY(t, t, degToRad(90));
+        mat4.rotateZ(t, t, degToRad(90));
+
+        mat4.rotateZ(t, t, degToRad(elos[1].angle));
+        mat4.translate(t, t, [elos[1].length / 2, 0, 0]);
+        let l2 = mat4.clone(t);
+        mat4.scale(l2, l2, [elos[1].length, 0.4, 0.4]);
+        drawCube(l2, elos[1].color);
+
+        // Link 3
+        mat4.translate(t, t, [elos[1].length / 2, 0, 0]);
+        mat4.rotateZ(t, t, degToRad(elos[2].angle));
+        mat4.translate(t, t, [elos[2].length / 2, 0, 0]);
+        let l3 = mat4.clone(t);
+        mat4.scale(l3, l3, [elos[2].length, 0.4, 0.4]);
+        drawCube(l3, elos[2].color);
+
+        // Link 4
+        mat4.translate(t, t, [elos[2].length / 2, 0, 0]);
+        mat4.rotateZ(t, t, degToRad(elos[3].angle));
+        mat4.translate(t, t, [elos[3].length / 2, 0, 0]);
+        let l4 = mat4.clone(t);
+        mat4.scale(l4, l4, [elos[3].length, 0.4, 0.4]);
+        drawCube(l4, elos[3].color);
+
+        // End effector
+        let eff = mat4.clone(t);
+        mat4.translate(eff, eff, [elos[3].length / 2, 0, 0]);
+        mat4.scale(eff, eff, [0.3, 0.3, 0.3]);
+        drawCube(eff, [1, 0.2, 0.2, 1]);
+
+        let final_pos = mat4.create();
+        mat4.rotateY(final_pos, final_pos, degToRad(elos[0].angle));
+        mat4.translate(final_pos, final_pos, [elos[0].length / 2, 0, 0]);
+        mat4.translate(final_pos, final_pos, [elos[0].length / 2, 0, 0]);
+        mat4.rotateY(final_pos, final_pos, degToRad(90));
+        mat4.rotateZ(final_pos, final_pos, degToRad(90));
+        mat4.rotateZ(final_pos, final_pos, degToRad(elos[1].angle));
+        mat4.translate(final_pos, final_pos, [elos[1].length / 2, 0, 0]);
+        mat4.translate(final_pos, final_pos, [elos[1].length / 2, 0, 0]);
+        mat4.rotateZ(final_pos, final_pos, degToRad(elos[2].angle));
+        mat4.translate(final_pos, final_pos, [elos[2].length / 2, 0, 0]);
+        mat4.translate(final_pos, final_pos, [elos[2].length / 2, 0, 0]);
+        mat4.rotateZ(final_pos, final_pos, degToRad(elos[3].angle));
+        mat4.translate(final_pos, final_pos, [elos[3].length / 2, 0, 0]);
+        mat4.translate(final_pos, final_pos, [elos[3].length / 2, 0, 0]);
+
+        fx = final_pos[12];
+        fy = final_pos[13];
+        fz = final_pos[14];
+
+        document.getElementById("tip").innerHTML = `x = ${fx}; y = ${fy}; z = ${fz}`;
+
+        draw_test();
+      }
+
+
+    // Matrix library (minimal version from glMatrix)
+    const mat4 = {
+      create: () => new Float32Array(16).fill(0).map((v, i) => (i % 5 === 0 ? 1 : 0)),
+      clone: (a) => new Float32Array(a),
+      multiply: (out, a, b) => {
+        const o = out, m = b;
+        const a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
+        const a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
+        const a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11];
+        const a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15];
+
+        const b00 = m[0], b01 = m[1], b02 = m[2], b03 = m[3];
+        const b10 = m[4], b11 = m[5], b12 = m[6], b13 = m[7];
+        const b20 = m[8], b21 = m[9], b22 = m[10], b23 = m[11];
+        const b30 = m[12], b31 = m[13], b32 = m[14], b33 = m[15];
+
+        o[0] = b00 * a00 + b01 * a10 + b02 * a20 + b03 * a30;
+        o[1] = b00 * a01 + b01 * a11 + b02 * a21 + b03 * a31;
+        o[2] = b00 * a02 + b01 * a12 + b02 * a22 + b03 * a32;
+        o[3] = b00 * a03 + b01 * a13 + b02 * a23 + b03 * a33;
+
+        o[4] = b10 * a00 + b11 * a10 + b12 * a20 + b13 * a30;
+        o[5] = b10 * a01 + b11 * a11 + b12 * a21 + b13 * a31;
+        o[6] = b10 * a02 + b11 * a12 + b12 * a22 + b13 * a32;
+        o[7] = b10 * a03 + b11 * a13 + b12 * a23 + b13 * a33;
+
+        o[8] = b20 * a00 + b21 * a10 + b22 * a20 + b23 * a30;
+        o[9] = b20 * a01 + b21 * a11 + b22 * a21 + b23 * a31;
+        o[10] = b20 * a02 + b21 * a12 + b22 * a22 + b23 * a32;
+        o[11] = b20 * a03 + b21 * a13 + b22 * a23 + b23 * a33;
+
+        o[12] = b30 * a00 + b31 * a10 + b32 * a20 + b33 * a30;
+        o[13] = b30 * a01 + b31 * a11 + b32 * a21 + b33 * a31;
+        o[14] = b30 * a02 + b31 * a12 + b32 * a22 + b33 * a32;
+        o[15] = b30 * a03 + b31 * a13 + b32 * a23 + b33 * a33;
+
+        return out;
+      },
+      perspective: (out, fovy, aspect, near, far) => {
+        const f = 1.0 / Math.tan(fovy / 2), nf = 1 / (near - far);
+        out[0] = f / aspect; out[1] = 0; out[2] = 0; out[3] = 0;
+        out[4] = 0; out[5] = f; out[6] = 0; out[7] = 0;
+        out[8] = 0; out[9] = 0; out[10] = (far + near) * nf; out[11] = -1;
+        out[12] = 0; out[13] = 0; out[14] = (2 * far * near) * nf; out[15] = 0;
+        return out;
+      },
+      lookAt: (out, eye, center, up) => {
+        let x0, x1, x2, y0, y1, y2, z0, z1, z2, len;
+        let eyex = eye[0], eyey = eye[1], eyez = eye[2];
+        let upx = up[0], upy = up[1], upz = up[2];
+        let centerx = center[0], centery = center[1], centerz = center[2];
+
+        z0 = eyex - centerx;
+        z1 = eyey - centery;
+        z2 = eyez - centerz;
+
+        len = Math.hypot(z0, z1, z2);
+        z0 /= len; z1 /= len; z2 /= len;
+
+        x0 = upy * z2 - upz * z1;
+        x1 = upz * z0 - upx * z2;
+        x2 = upx * z1 - upy * z0;
+        len = Math.hypot(x0, x1, x2);
+        x0 /= len; x1 /= len; x2 /= len;
+
+        y0 = z1 * x2 - z2 * x1;
+        y1 = z2 * x0 - z0 * x2;
+        y2 = z0 * x1 - z1 * x0;
+
+        out[0] = x0; out[1] = y0; out[2] = z0; out[3] = 0;
+        out[4] = x1; out[5] = y1; out[6] = z1; out[7] = 0;
+        out[8] = x2; out[9] = y2; out[10] = z2; out[11] = 0;
+        out[12] = -(x0 * eyex + x1 * eyey + x2 * eyez);
+        out[13] = -(y0 * eyex + y1 * eyey + y2 * eyez);
+        out[14] = -(z0 * eyex + z1 * eyey + z2 * eyez);
+        out[15] = 1;
+
+        return out;
+      },
+      translate: (out, a, v) => {
+        const x = v[0], y = v[1], z = v[2];
+        const m = mat4.create();
+        m[12] = x; m[13] = y; m[14] = z;
+        return mat4.multiply(out, a, m);
+      },
+      rotateX: (out, a, rad) => {
+        const m = mat4.create();
+        m[5] = Math.cos(rad);  m[6] = Math.sin(rad);
+        m[9] = -Math.sin(rad); m[10] = Math.cos(rad);
+        return mat4.multiply(out, a, m);
+      },
+      rotateY: (out, a, rad) => {
+        const m = mat4.create();
+        m[0] = Math.cos(rad); m[2] = -Math.sin(rad);
+        m[8] = Math.sin(rad); m[10] = Math.cos(rad);
+        return mat4.multiply(out, a, m);
+      },
+      rotateZ: (out, a, rad) => {
+        const m = mat4.create();
+        m[0] = Math.cos(rad); m[1] = Math.sin(rad);
+        m[4] = -Math.sin(rad); m[5] = Math.cos(rad);
+        return mat4.multiply(out, a, m);
+      },
+      scale: (out, a, s) => {
+        const m = mat4.create();
+        m[0] = s[0]; m[5] = s[1]; m[10] = s[2];
+        return mat4.multiply(out, a, m);
+      }
+    };
+
+    const joint1Slider = document.getElementById("joint1");
+    const joint2Slider = document.getElementById("joint2");
+    const joint3Slider = document.getElementById("joint3");
+    const joint4Slider = document.getElementById("joint4");
+
+    /*
+    joint1Slider.addEventListener("input", render);
+    joint2Slider.addEventListener("input", render);
+    joint3Slider.addEventListener("input", render);
+    joint4Slider.addEventListener("input", render);
+    */
+
+    [joint1Slider, joint2Slider, joint3Slider, joint4Slider].forEach(s => {
+        s.addEventListener("input", updateElos);
+    });
+
+    function updateElos() {
+        elos[0].angle = parseFloat(joint1Slider.value);
+        elos[1].angle = parseFloat(joint2Slider.value);
+        elos[2].angle = parseFloat(joint3Slider.value);
+        elos[3].angle = parseFloat(joint4Slider.value);
+        document.getElementById("dados").innerHTML = JSON.stringify(elos);
+        render();
+    }
+
+    render(); // initial render
+

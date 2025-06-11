@@ -4,7 +4,7 @@ import { useState } from 'react'
 import ControlButton from './control-button.tsx'
 import './angle-controls.css'
 
-export default function AngleControls() {
+export default function AngleControls({ ctxRef }) {
     return (
         <div className="angle-controls">
             <p>Base</p>
