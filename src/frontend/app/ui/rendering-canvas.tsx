@@ -4,10 +4,10 @@ import { useEffect } from 'react';
 import './rendering-canvas.css'
 import startWebGLForContext from './../webgl/webgl.js'
 
-export default function RenderingCanvas({ canvasRef, ctxRef }) {
+export default function RenderingCanvas({ canvasRef, glRef }) {
     useEffect(() => {
-        ctxRef.current = canvasRef.current.getContext("webgl")
-        startWebGLForContext(ctxRef.current)
+        glRef.current = canvasRef.current.getContext("webgl")
+        startWebGLForContext(glRef.current)
     })
 
     return (

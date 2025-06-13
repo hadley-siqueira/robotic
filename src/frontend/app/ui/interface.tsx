@@ -10,13 +10,13 @@ import { useRef } from 'react';
 
 export default function Interface() {
     const canvasRef = useRef(null)
-    const ctxRef = useRef(null)
+    const glRef = useRef(null)
 
     return (
         <div className="interface">
-            <RenderingCanvas canvasRef={canvasRef} ctxRef={ctxRef} />
+            <RenderingCanvas canvasRef={canvasRef} glRef={glRef} />
             <Status />
-            <Controls ctxRef={ctxRef} />
+            <Controls glRef={glRef} />
             <Logs />
             <Positions />
         </div>

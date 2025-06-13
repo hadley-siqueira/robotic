@@ -154,25 +154,25 @@
         {
             name: "base",
             angle: 0,
-            length: 2,
+            length: 9,
             color: [0.3, 0.6, 1, 1]
         },
         {
             name: "elo0",
             angle: 0,
-            length: 10,
+            length: 14,
             color: [0.3, 1, 0.6, 1]
         },
         {
             name: "elo1",
             angle: 0,
-            length: 10,
+            length: 11,
             color: [1, 0.6, 0.3, 1]
         },
         {
             name: "elo2",
             angle: 0,
-            length: 3,
+            length: 10,
             color: [0.6, 0.3, 1, 1]
         },
     ]
@@ -472,7 +472,7 @@
         const projection = mat4.create();
         const view = mat4.create();
 
-        mat4.perspective(projection, zoom, canvas.width / canvas.height, 0.1, 200);
+        mat4.perspective(projection, degToRad(90), canvas.width / canvas.height, 0.1, 200);
         mat4.lookAt(view, [eye.x, eye.y, eye.z], [0, 0, 0], [0, 1, 0]);
 
         let projview = mat4.create();
