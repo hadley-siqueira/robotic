@@ -17,6 +17,7 @@ let renderer = null
 
 let scale_mm = 100
 
+let base = null
 let elos = [
     {
         length: 90,
@@ -27,28 +28,28 @@ let elos = [
     },
     {
         length: 140,
-        angle: 30,
+        angle: 0,
         color: 0xff0000,
         mesh: null,
         grid: null
     },
     {
         length: 115,
-        angle: 30,
+        angle: 0,
         color: 0xff0000,
         mesh: null,
         grid: null
     },
     {
         length: 100,
-        angle: 30,
+        angle: 0,
         color: 0xff0000,
         mesh: null,
         grid: null
     }
 ]
 
-export default function configureCanvas(canvasRef) {
+function configureCanvas(canvasRef) {
     canvas = canvasRef.current;
     width = canvas.clientWidth;
     height = canvas.clientHeight;
@@ -93,14 +94,14 @@ function createElo(elo) {
     let geometry = new THREE.BoxGeometry(w, dim, dim);
     let material = new THREE.MeshNormalMaterial();
     let mesh = new THREE.Mesh(geometry, material);
-    mesh.add(createAxes());
+    //mesh.add(createAxes());
 
     elo.mesh = mesh
     mesh.position.x = w / 2
 
     let grid = new THREE.Object3D()
     grid.position.x = w / 2
-    grid.add(createAxes())
+    //grid.add(createAxes())
     elo.grid = grid
     mesh.add(grid)
 
@@ -128,11 +129,18 @@ function createArms(elos) {
     elos[2].grid.add(elo3)
     elos[2].grid.rotation.y = -degToRad(elos[3].angle)
 
-    let base = new THREE.Object3D()
+    base = new THREE.Object3D()
     elo0.position.x = elos[0].length / scale_mm / 2
     base.add(elo0)
     scene.add(base);
-    base.rotation.y = 3.1415 / 4
+    base.rotation.y = degToRad(elos[0].angle)
+}
+
+function animateElos() {
+    base.rotation.y = degToRad(elos[0].angle)
+    elos[0].grid.rotation.x = degToRad(elos[1].angle)
+    elos[1].grid.rotation.y = -degToRad(elos[2].angle)
+    elos[2].grid.rotation.y = -degToRad(elos[3].angle)
 }
 
 function resizeRendererToDisplaySize(renderer) {
@@ -159,7 +167,26 @@ function animate( time ) {
     //mesh.rotation.x = time / 2000;
     //mesh.rotation.y = time / 1000;
     //elos[0].mesh.rotation.y = time / 5000;
+    
+    animateElos()
 
     renderer.render( scene, camera );
 }
 
+function setAngles(angles) {
+    for (let i = 0; i < angles.length && i < 4; ++i) {
+        elos[i].angle = angles[i]
+    }
+}
+
+function setAnglesDelta(angles) {
+    for (let i = 0; i < angles.length && i < 4; ++i) {
+        elos[i].angle += angles[i]
+    }
+}
+
+export {
+    configureCanvas,
+    setAngles,
+    setAnglesDelta
+} 

@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import './rendering-canvas.css'
-import configureCanvas from '../canvas/canvas.js'
+import { configureCanvas } from '../canvas/canvas.js'
 
 
 export default function RenderingCanvas({ canvasRef, glRef }) {
