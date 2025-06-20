@@ -5,6 +5,9 @@ export default function startWebGLForContext(gl) {
     }
 
     useShaders(gl, vertexShaderSource, fragmentShaderSource)
+    gl.enable(gl.DEPTH_TEST)
+    gl.enable(gl.CULL_FACE);
+    render(gl)
 }
 
 // Vertex Shader
@@ -26,6 +29,10 @@ const fragmentShaderSource = `
         gl_FragColor = uColor;
     }
 `
+
+let cubeVertices = [
+
+]
 
 function createShader(gl, type, source) {
     let shader = gl.createShader(type);
@@ -74,3 +81,23 @@ function useShaders(gl, vertexShaderSource, fragmentShaderSource) {
     }
 }
 
+function resizeGlCanvas(gl) {
+    let w = gl.canvas.clientWidth
+    let h = gl.canvas.clientHeight
+
+    if (w !== gl.canvas.width || h !== gl.canvas.height) {
+        gl.canvas.width = w
+        gl.canvas.height = h
+        gl.viewport(0, 0, w, h)
+    }
+}
+
+function clearCanvas(gl) {
+    gl.clearColor(0.95, 0.95, 0.95, 1)
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+}
+
+function render(gl) {
+    resizeGlCanvas(gl)
+    clearCanvas(gl)
+}
