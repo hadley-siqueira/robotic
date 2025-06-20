@@ -13,11 +13,31 @@ export default function AngleControls({ glRef }) {
     }
 
     function decreaseBaseAngle() {
-        setAnglesDelta([-baseAngle, 0, 0, 0])
+        fetch(`http://localhost:3000/angle/delta`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                motor: 0,
+                value: -baseAngle
+            })
+        })
     }
 
     function increaseBaseAngle() {
-        setAnglesDelta([baseAngle, 0, 0, 0])
+        fetch(`http://localhost:3000/angle/delta`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                motor: 0,
+                value: baseAngle
+            })
+        })
     }
 
     return (
